@@ -1,9 +1,3 @@
-Точно! Вот исправленный промпт для Maven проекта:
-
-PROMPT: Создание README.md для Food Delivery Microservices Project (Maven)
-Задача
-Создать профессиональный и структурированный README.md файл для микросервисной архитектуры системы доставки еды на Maven.
-Структура README.md
 1. Заголовок и описание проекта
    markdown# 🍕 Food Delivery Microservices System
 
@@ -292,12 +286,12 @@ food-delivery-microservices/
 ```xml
 
 
-    eureka-server
-    api-gateway
-    order-service
-    payment-service
-    restaurant-service
-    delivery-service
+eureka-server
+        api-gateway
+        order-service
+        payment-service
+        restaurant-service
+        delivery-service
 
 ```
 12. Troubleshooting
