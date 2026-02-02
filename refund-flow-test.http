@@ -1,0 +1,134 @@
+### ===== COMPLETE REFUND FLOW TESTING =====
+### This file tests the full async refund flow across all services
+
+### ===== STEP 1: CREATE A RESTAURANT =====
+### First, ensure we have a restaurant to work with
+POST http://localhost:8082/api/restaurants
+Content-Type: application/json
+
+{
+  "name": "Pizza Palace",
+  "address": "123 Main St",
+  "isOpen": true,
+  "averageCookingTimeMinutes": 25
+}
+
+### Save the restaurant ID from the response!
+
+### ===== STEP 2: CREATE AN ORDER =====
+### Create an order for the restaurant (replace restaurantId)
+POST http://localhost:8081/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "customer-123",
+  "restaurantId": "REPLACE_WITH_RESTAURANT_ID",
+  "deliveryAddress": "456 Oak Ave",
+  "phoneNumber": "+1234567890",
+  "items": [
+    {
+      "productId": "pizza-1",
+      "name": "Margherita Pizza",
+      "quantity": 2,
+      "price": 15.99
+    },
+    {
+      "productId": "drink-1",
+      "name": "Cola",
+      "quantity": 2,
+      "price": 2.50
+    }
+  ]
+}
+
+### Save the order ID from the response!
+### Wait 2-3 seconds for the order to be processed by Restaurant Service
+
+### ===== STEP 3: CHECK ORDER STATUS (should be ACCEPTED) =====
+GET http://localhost:8081/api/orders/{orderId}
+
+### ===== STEP 4: CHECK RESTAURANT ORDER (should exist and be PREPARING) =====
+### You can verify in restaurant database or via API if available
+
+### ===== STEP 5: REQUEST REFUND =====
+### This triggers the async refund flow
+POST http://localhost:8081/api/payments/refund/{orderId}
+Content-Type: application/json
+
+{
+  "reason": "Customer changed their mind"
+}
+
+### Expected response: 202 Accepted
+### {
+###   "orderId": "...",
+###   "status": "REFUND_REQUESTED",
+###   "message": "Refund request is being processed asynchronously..."
+### }
+
+### ===== STEP 6: WAIT AND CHECK ORDER STATUS =====
+### Wait 3-5 seconds for async processing, then check status
+### Expected: Order status should be REFUNDED (if payment was found) or REFUND_FAILED
+GET http://localhost:8081/api/orders/{orderId}
+
+### ===== STEP 7: VERIFY RESTAURANT ORDER WAS CANCELLED =====
+### The restaurant order should now have status CANCELLED
+### Check restaurant_orders table in restaurant_db
+
+### ===== ERROR SCENARIOS =====
+
+### 8. Refund for non-existent order (expect 404)
+POST http://localhost:8081/api/payments/refund/non-existent-order
+Content-Type: application/json
+
+{
+  "reason": "Test"
+}
+
+### 9. Refund without reason (expect 400 validation error)
+POST http://localhost:8081/api/payments/refund/{orderId}
+Content-Type: application/json
+
+{
+  "reason": ""
+}
+
+### 10. Double refund (expect 400 - order already refunded)
+### Try to refund the same order again
+POST http://localhost:8081/api/payments/refund/{orderId}
+Content-Type: application/json
+
+{
+  "reason": "Second attempt"
+}
+
+### ===== KAFKA TOPICS TO MONITOR =====
+### Use kafka-console-consumer to monitor these topics:
+###
+### # Refund requests from Order Service
+### kafka-console-consumer --bootstrap-server localhost:9092 --topic refund-events --from-beginning
+###
+### # Payment events (refund completed/failed)
+### kafka-console-consumer --bootstrap-server localhost:9092 --topic payment-events --from-beginning
+###
+### # Restaurant events (order cancelled)
+### kafka-console-consumer --bootstrap-server localhost:9092 --topic restaurant-events --from-beginning
+
+### ===== EXPECTED EVENT FLOW =====
+### 1. POST /api/payments/refund/{orderId}
+###    -> Order Service updates order status to REFUND_REQUESTED
+###    -> Order Service publishes RefundRequestedEvent to refund-events
+###
+### 2. Payment Service receives RefundRequestedEvent
+###    -> Processes refund (marks payment as REFUNDED)
+###    -> Publishes RefundCompletedEvent to payment-events
+###
+### 3. Order Service receives RefundCompletedEvent
+###    -> Updates order status to REFUNDED
+###
+### 4. Restaurant Service receives RefundCompletedEvent
+###    -> Cancels restaurant order (status = CANCELLED)
+###    -> Publishes OrderCancelledEvent to restaurant-events
+###
+### 5. Order Service receives OrderCancelledEvent
+###    -> Updates order status to CANCELLED (if not already REFUNDED)

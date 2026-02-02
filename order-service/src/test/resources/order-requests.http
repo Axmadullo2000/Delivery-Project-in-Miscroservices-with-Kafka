@@ -1,0 +1,81 @@
+### ===== ORDER SERVICE API TESTING =====
+
+### 1. Create a new order
+POST http://localhost:8081/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "customer-123",
+  "restaurantId": "restaurant-456",
+  "deliveryAddress": "123 Main St, City",
+  "phoneNumber": "+1234567890",
+  "items": [
+    {
+      "productId": "product-1",
+      "name": "Pizza Margherita",
+      "quantity": 2,
+      "price": 25.50
+    },
+    {
+      "productId": "product-2",
+      "name": "Cola",
+      "quantity": 1,
+      "price": 3.00
+    }
+  ]
+}
+
+### 2. Get all orders
+GET http://localhost:8081/api/orders
+
+### 3. Get order by ID (replace {orderId} with actual order ID from step 1)
+GET http://localhost:8081/api/orders/{orderId}
+
+### 4. Get orders by customer ID
+GET http://localhost:8081/api/orders/customer/customer-123
+
+### ===== REFUND TESTING =====
+
+### 5. Request refund via /api/payments/refund endpoint (recommended)
+### Replace {orderId} with actual order ID
+POST http://localhost:8081/api/payments/refund/{orderId}
+Content-Type: application/json
+
+{
+  "reason": "Food quality was not satisfactory"
+}
+
+### 6. Request refund via /api/orders endpoint (alternative)
+### Replace {orderId} with actual order ID
+POST http://localhost:8081/api/orders/{orderId}/refund?reason=Customer%20changed%20mind
+
+### 7. Check order status after refund (wait 2-3 seconds for async processing)
+### Replace {orderId} with actual order ID
+GET http://localhost:8081/api/orders/{orderId}
+
+### ===== ERROR SCENARIOS =====
+
+### 8. Request refund for non-existent order (expect 404)
+POST http://localhost:8081/api/payments/refund/non-existent-order-id
+Content-Type: application/json
+
+{
+  "reason": "Test refund"
+}
+
+### 9. Request refund without reason (expect 400 validation error)
+POST http://localhost:8081/api/payments/refund/{orderId}
+Content-Type: application/json
+
+{
+  "reason": ""
+}
+
+### 10. Request refund for already refunded order (expect 400)
+### First request refund, wait, then request again
+POST http://localhost:8081/api/payments/refund/{orderId}
+Content-Type: application/json
+
+{
+  "reason": "Second refund attempt"
+}

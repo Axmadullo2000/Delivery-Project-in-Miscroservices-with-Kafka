@@ -1,0 +1,111 @@
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # Enable discovery locator to automatically create routes for services registered in Eureka
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      # Define explicit routes to services
+      routes:
+        # Order Service Routes
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - StripPrefix=0
+
+        - id: order-service-alt
+          uri: lb://order-service
+          predicates:
+            - Path=/orders/**
+          filters:
+            - RewritePath=/orders/(?<segment>.*), /api/orders/${segment}
+
+        # Payment Service Routes
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - StripPrefix=0
+
+        - id: payment-service-alt
+          uri: lb://payment-service
+          predicates:
+            - Path=/payments/**
+          filters:
+            - RewritePath=/payments/(?<segment>.*), /api/payments/${segment}
+
+        # Restaurant Service Routes
+        - id: restaurant-service
+          uri: lb://restaurant-service
+          predicates:
+            - Path=/api/restaurants/**
+          filters:
+            - StripPrefix=0
+
+        - id: restaurant-service-alt
+          uri: lb://restaurant-service
+          predicates:
+            - Path=/restaurants/**
+          filters:
+            - RewritePath=/restaurants/(?<segment>.*), /api/restaurants/${segment}
+
+      # Global CORS configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:4200"
+              - "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      # Default filters applied to all routes
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+server:
+  port: 8080
+
+# Eureka Client Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    gateway:
+      enabled: true
+
+logging:
+  level:
+    com.training.apigateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG

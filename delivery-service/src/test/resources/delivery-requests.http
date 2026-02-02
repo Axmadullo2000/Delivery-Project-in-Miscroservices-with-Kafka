@@ -1,0 +1,79 @@
+### ===== DELIVERY SERVICE API TESTING =====
+
+### Health check
+GET http://localhost:8084/api/deliveries/health
+
+### ===== DELIVERY ENDPOINTS =====
+
+### 1. Get all deliveries
+GET http://localhost:8084/api/deliveries
+
+### 2. Get delivery by ID (replace with actual delivery ID)
+GET http://localhost:8084/api/deliveries/{deliveryId}
+
+### 3. Get delivery by Order ID (replace with actual order ID)
+GET http://localhost:8084/api/deliveries/order/{orderId}
+
+### 4. Get deliveries by status
+GET http://localhost:8084/api/deliveries/status/PENDING
+
+### 5. Assign courier to delivery
+POST http://localhost:8084/api/deliveries/{deliveryId}/assign
+Content-Type: application/json
+
+{
+  "courierName": "John Doe",
+  "courierId": "COURIER-001",
+  "estimatedDeliveryMinutes": 25
+}
+
+### 6. Start delivery (courier picked up the order)
+POST http://localhost:8084/api/deliveries/{deliveryId}/start
+
+### 7. Complete delivery
+POST http://localhost:8084/api/deliveries/{deliveryId}/complete
+
+### 8. Cancel delivery
+POST http://localhost:8084/api/deliveries/{deliveryId}/cancel?reason=Customer%20not%20available
+
+### ===== FULL FLOW TESTING =====
+###
+### The delivery is automatically created when PaymentCompletedEvent is received.
+### To test the full flow:
+###
+### 1. Create an order via Order Service (port 8081)
+### 2. Wait for Restaurant to accept (OrderAcceptedEvent)
+### 3. Payment Service processes payment (PaymentCompletedEvent)
+### 4. Delivery Service receives PaymentCompletedEvent and creates delivery
+### 5. Check delivery was created:
+###    GET http://localhost:8084/api/deliveries/order/{orderId}
+### 6. Assign courier
+### 7. Start delivery
+### 8. Complete delivery
+
+### ===== KAFKA TOPICS TO MONITOR =====
+###
+### # Payment events (triggers delivery creation)
+### kafka-console-consumer --bootstrap-server localhost:9092 --topic payment-events --from-beginning
+###
+### # Delivery events (produced by this service)
+### kafka-console-consumer --bootstrap-server localhost:9092 --topic delivery-events --from-beginning
+###
+### # Restaurant events (order cancellation triggers delivery cancellation)
+### kafka-console-consumer --bootstrap-server localhost:9092 --topic restaurant-events --from-beginning
+
+### ===== ERROR SCENARIOS =====
+
+### Get non-existent delivery (expect 404)
+GET http://localhost:8084/api/deliveries/non-existent-id
+
+### Assign courier without name (expect 400)
+POST http://localhost:8084/api/deliveries/{deliveryId}/assign
+Content-Type: application/json
+
+{
+  "courierName": ""
+}
+
+### Complete already delivered order (expect 400)
+POST http://localhost:8084/api/deliveries/{deliveryId}/complete
