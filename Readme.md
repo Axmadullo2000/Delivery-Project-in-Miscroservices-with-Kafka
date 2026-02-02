@@ -1,8 +1,8 @@
-Вот детальный промпт для создания README.md:
+Точно! Вот исправленный промпт для Maven проекта:
 
-PROMPT: Создание README.md для Food Delivery Microservices Project
+PROMPT: Создание README.md для Food Delivery Microservices Project (Maven)
 Задача
-Создать профессиональный и структурированный README.md файл для микросервисной архитектуры системы доставки еды.
+Создать профессиональный и структурированный README.md файл для микросервисной архитектуры системы доставки еды на Maven.
 Структура README.md
 1. Заголовок и описание проекта
    markdown# 🍕 Food Delivery Microservices System
@@ -45,7 +45,7 @@ Client → API Gateway → Eureka (Service Discovery) → Microservice
 - **Java**: 17
 - **Spring Boot**: 3.4.1
 - **Spring Cloud**: 2023.0.0
-- **Build Tool**: Gradle with Kotlin DSL
+- **Build Tool**: Apache Maven 3.8+
 
 ### Микросервисы
 - Spring Cloud Netflix Eureka (Service Discovery)
@@ -68,7 +68,7 @@ Client → API Gateway → Eureka (Service Discovery) → Microservice
 Перед запуском проекта убедитесь, что установлены:
 
 - Java 17 или выше
-- Gradle 8.x
+- Apache Maven 3.8+
 - PostgreSQL 14+
 - Apache Kafka 3.x
 - Docker (опционально, для контейнеризации)
@@ -76,7 +76,7 @@ Client → API Gateway → Eureka (Service Discovery) → Microservice
 ### Проверка версий:
 ```bash
 java -version
-gradle -v
+mvn -version
 psql --version
 ```
 5. Настройка базы данных
@@ -124,7 +124,11 @@ cd food-delivery-microservices
 
 ### 2. Сборка проекта
 ```bash
-./gradlew clean build
+# Сборка всех модулей из корневой директории
+mvn clean install
+
+# Или сборка с пропуском тестов
+mvn clean install -DskipTests
 ```
 
 ### 3. Порядок запуска сервисов
@@ -133,17 +137,31 @@ cd food-delivery-microservices
 ```bash
 # 1. Eureka Server (должен запуститься первым)
 cd eureka-server
-./gradlew bootRun
+mvn spring-boot:run
 
 # 2. API Gateway (после того как Eureka поднялся)
 cd api-gateway
-./gradlew bootRun
+mvn spring-boot:run
 
 # 3. Микросервисы (можно запускать параллельно)
-cd order-service && ./gradlew bootRun &
-cd payment-service && ./gradlew bootRun &
-cd restaurant-service && ./gradlew bootRun &
-cd delivery-service && ./gradlew bootRun &
+cd order-service && mvn spring-boot:run &
+cd payment-service && mvn spring-boot:run &
+cd restaurant-service && mvn spring-boot:run &
+cd delivery-service && mvn spring-boot:run &
+```
+
+### Альтернативный способ (через JAR):
+```bash
+# Сборка
+mvn clean package
+
+# Запуск
+java -jar eureka-server/target/eureka-server-0.0.1-SNAPSHOT.jar &
+java -jar api-gateway/target/api-gateway-0.0.1-SNAPSHOT.jar &
+java -jar order-service/target/order-service-0.0.1-SNAPSHOT.jar &
+java -jar payment-service/target/payment-service-0.0.1-SNAPSHOT.jar &
+java -jar restaurant-service/target/restaurant-service-0.0.1-SNAPSHOT.jar &
+java -jar delivery-service/target/delivery-service-0.0.1-SNAPSHOT.jar &
 ```
 
 ### 4. Проверка работоспособности
@@ -266,9 +284,21 @@ food-delivery-microservices/
 ├── payment-service/         # Payment Processing
 ├── restaurant-service/      # Restaurant Management
 ├── delivery-service/        # Delivery Management
-├── build.gradle.kts         # Root build file
-├── settings.gradle.kts      # Multi-module settings
+├── pom.xml                  # Parent POM file
 └── README.md
+```
+
+### Maven Multi-Module структура:
+```xml
+
+
+    eureka-server
+    api-gateway
+    order-service
+    payment-service
+    restaurant-service
+    delivery-service
+
 ```
 12. Troubleshooting
     markdown## 🔧 Troubleshooting
@@ -290,6 +320,11 @@ food-delivery-microservices/
 - Проверьте, что топики созданы
 - Проверьте логи Kafka Consumer'ов
 - Убедитесь, что `group-id` уникальны
+
+### Maven build fails
+- Убедитесь, что используете Java 17
+- Выполните `mvn clean install` из корневой директории
+- Проверьте, что все зависимости скачались: `mvn dependency:tree`
 13. Roadmap и Future Features
     markdown## 🗺️ Roadmap
 
@@ -308,8 +343,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 👨‍💻 Author
 
-[Axmadullo Ubaydullayev]
+Axmadullo Ubaydullayev
 
 ## 📧 Contact
 
-For questions or support, please contact: [axmadullo2000@gmail.com]
+For questions or support, please contact: axmadullo2000@gmail.com
